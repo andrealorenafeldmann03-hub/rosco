@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>El Gran Rosco Escolar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-color:#2196F3;
+    --btn-orange:#FF9800;
+    --btn-red:#F44336;
+    --btn-green:#4CAF50;
+    --text-white:#FFFFFF;
+    --border-dark:#1A1A1A;
+    --pending:#0288D1;
+    --correct:#4CAF50;
+    --error:#E53935;
+    --active:#FFEB3B;
+    --purple:#9C27B0;
+  }
+  *{box-sizing:border-box; user-select:none; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: linear-gradient(160deg,#2196F3 0%, #1976D2 100%);
+    background-attachment: fixed;
+    font-family:'Nunito',sans-serif;
+    color:var(--text-white);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:16px;
+  }
+  .pixel-text{font-family:'Press Start 2P', monospace; text-shadow:3px 3px 0 var(--border-dark);}
+  h1#main-title{font-size:clamp(16px,4.5vw,28px); text-align:center; margin:6px 0 18px 0; letter-spacing:1px;}
+  #app{width:100%; max-width:760px; display:flex; flex-direction:column; align-items:center;}
+
+  .screen{display:none; width:100%; flex-direction:column; align-items:center;}
+  .screen.active{display:flex;}
+
+  .card{
+    background:rgba(0,0,0,0.28);
+    border:4px solid var(--border-dark);
+    border-radius:18px;
+    padding:20px;
+    width:100%;
+    max-width:620px;
+    text-align:center;
+    position:relative;
+  }
+
+  /* Botones bloque de juguete */
+  .toy-btn{
+    display:inline-block;
+    font-family:'Press Start 2P', monospace;
+    font-size:12px;
+    color:#fff;
+    background-color:var(--btn-orange);
+    border:3px solid var(--border-dark);
+    border-bottom:7px solid var(--border-dark);
+    border-radius:12px;
+    padding:14px 18px;
+    cursor:pointer;
+    text-shadow:2px 2px 0 var(--border-dark);
+    transition:transform .08s ease, border-bottom-width .08s ease, filter .1s ease;
+    position:relative;
+    margin:6px;
+    line-height:1.4;
+  }
+  .toy-btn:hover{filter:brightness(1.1);}
+  .toy-btn:active{transform:translateY(4px); border-bottom-width:3px;}
+  .toy-btn:disabled{opacity:.5; cursor:not-allowed; filter:none;}
+  .btn-red{background-color:var(--btn-red);}
+  .btn-green{background-color:var(--btn-green);}
+  .btn-blue{background-color:var(--pending);}
+  .btn-purple{background-color:var(--purple);}
+  .btn-small{font-size:10px; padding:10px 14px; border-bottom-width:5px;}
+
+  @keyframes starJump{
+    0%{opacity:1; transform:translate(-50%,0) scale(1) rotate(0deg);}
+    100%{opacity:0; transform:translate(-50%,-60px) scale(1.6) rotate(45deg);}
+  }
+  .star-fx{position:absolute; top:-10px; left:50%; font-size:22px; pointer-events:none; animation:starJump .5s ease-out forwards;}
+
+  label.field-label{display:block; font-family:'Press Start 2P'; font-size:10px; margin:14px 0 8px; text-shadow:2px 2px 0 var(--border-dark);}
+
+  input[type="text"]{
+    width:85%;
+    padding:12px;
+    font-size:1.05rem;
+    font-family:'Nunito', sans-serif;
+    font-weight:800;
+    border:3px solid var(--border-dark);
+    border-radius:10px;
+    text-align:center;
+    outline:none;
+    color:#222;
+  }
+
+  .avatar-grid{display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin-bottom:6px;}
+  .avatar-option{
+    font-size:22px;
+    width:46px; height:46px;
+    display:flex; align-items:center; justify-content:center;
+    background:#fff2;
+    border:3px solid var(--border-dark);
+    border-radius:10px;
+    cursor:pointer;
+  }
+  .avatar-option.selected{background:var(--btn-green); outline:3px solid #fff;}
+
+  .mode-grid, .diff-grid{display:flex; flex-wrap:wrap; justify-content:center; margin-top:6px;}
+  .diff-grid .toy-btn small{display:block; font-family:'Nunito'; font-size:9px; font-weight:700; margin-top:4px; text-shadow:none;}
+
+  .player-block{margin-top:10px; padding-top:10px; border-top:2px dashed rgba(255,255,255,.4);}
+
+  #welcome-actions{margin-top:18px;}
+
+  /* Pantalla de juego */
+  .badge{
+    font-family:'Press Start 2P', monospace;
+    border:3px solid var(--border-dark);
+    border-radius:8px;
+    padding:8px 12px;
+    font-size:12px;
+    text-shadow:2px 2px 0 var(--border-dark);
+  }
+  #timer-badge{background:var(--btn-orange);}
+  #difficulty-badge{background:var(--purple); margin-left:6px;}
+
+  /* Cartel de cambio de turno */
+  #turn-banner{
+    font-family:'Press Start 2P'; font-size:14px; margin-bottom:10px;
+    background:var(--btn-red); border:3px solid var(--border-dark); border-radius:10px;
+    padding:10px 16px; text-shadow:2px 2px 0 var(--border-dark);
+    transition:transform .15s ease;
+  }
+  #turn-banner.turn-flash{
+    animation:turnPulse 0.5s ease;
+  }
+  @keyframes turnPulse{
+    0%{transform:scale(0.7); filter:brightness(1.6);}
+    50%{transform:scale(1.12);}
+    100%{transform:scale(1);}
+  }
+
+  /* Roscos en paralelo, uno por jugador */
+  .roscos-container{
+    display:flex; flex-wrap:wrap; gap:14px; justify-content:center; width:100%; margin-bottom:6px;
+  }
+  .rosco-panel{
+    flex:1 1 240px; max-width:300px;
+    border:3px solid rgba(0,0,0,0.5);
+    border-radius:16px;
+    padding:10px 8px 14px;
+    background:rgba(0,0,0,0.18);
+    transition:border-color .2s ease, box-shadow .2s ease;
+  }
+  .rosco-panel.active-panel{
+    border-color:#FFEB3B;
+    box-shadow:0 0 0 3px rgba(255,235,59,0.5);
+  }
+  .rosco-panel h3{
+    font-family:'Press Start 2P'; font-size:10px; margin:2px 0 8px; line-height:1.5;
+  }
+  .rosco-panel .turn-tag{
+    display:inline-block; margin-top:4px; font-family:'Press Start 2P'; font-size:8px;
+    background:#FFEB3B; color:#222; border:2px solid var(--border-dark); border-radius:6px; padding:3px 6px;
+  }
+  .rosco-mini-wrap{
+    position:relative; width:min(58vw, 220px); aspect-ratio:1/1; margin:4px auto 2px;
+  }
+  .rosco-ring-inner{position:absolute; inset:0;}
+  .letter-badge{
+    position:absolute;
+    width:clamp(18px, 6.6vmin, 30px);
+    height:clamp(18px, 6.6vmin, 30px);
+    border-radius:50%;
+    border:2px solid var(--border-dark);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Press Start 2P'; font-size:clamp(7px,2.3vmin,10px);
+    background:var(--pending); color:#fff;
+    transform:translate(-50%,-50%);
+    transition:background .2s ease, transform .2s ease;
+  }
+  .letter-badge.correct{background:var(--correct);}
+  .letter-badge.error{background:var(--error);}
+  .letter-badge.active{background:var(--active); color:#222; transform:translate(-50%,-50%) scale(1.22); animation:blink 0.9s infinite;}
+  @keyframes blink{0%,100%{filter:brightness(1);} 50%{filter:brightness(1.4);}}
+
+  .rosco-center-letter{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    font-family:'Press Start 2P'; font-size:clamp(14px,5.5vmin,24px); text-shadow:2px 2px 0 var(--border-dark);
+  }
+
+  .definition-box{
+    background:#FFFFFF; color:#222; border:4px solid var(--border-dark); border-radius:12px;
+    padding:14px; margin:10px 0 14px; font-size:1.05rem; line-height:1.35; min-height:80px;
+    display:flex; align-items:center; justify-content:center; width:100%; max-width:620px;
+    transition:opacity .15s ease;
+  }
+  .definition-box strong{color:#0288D1;}
+  .definition-box.waiting{opacity:0.35;}
+
+  #bot-thinking{font-family:'Press Start 2P'; font-size:11px; margin:8px 0;}
+
+  .hidden{display:none !important;}
+
+  /* Trofeos */
+  .trophy-row{
+    background:#ffffff22; border:3px solid var(--border-dark); border-radius:10px;
+    padding:10px 12px; margin-bottom:8px; text-align:left; font-weight:800; font-size:.92rem;
+  }
+  .trophy-row .tr-name{display:flex; align-items:center; gap:8px; font-family:'Nunito'; font-size:1rem;}
+  .trophy-row small{display:block; font-weight:700; opacity:.85; font-size:.75rem;}
+  .history-entry{
+    background:#ffffff18; border:2px solid rgba(0,0,0,0.4); border-radius:8px;
+    padding:8px 10px; margin-bottom:6px; text-align:left; font-size:.85rem; font-weight:700;
+  }
+  #trophies-history-title{font-family:'Press Start 2P'; font-size:11px; margin:16px 0 8px;}
+
+  #results-summary{font-family:'Nunito'; font-weight:900; font-size:1.1rem; margin:10px 0; line-height:1.6;}
+
+  footer{margin-top:18px; font-size:.7rem; opacity:.7; text-align:center;}
+
+  @media (max-width:380px){
+    .badge{font-size:10px; padding:6px 9px;}
+  }
+
+  /* Modal de confirmación propio (no usa confirm() nativo) */
+  #confirm-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,0.55);
+    display:none; align-items:center; justify-content:center;
+    z-index:999; padding:16px;
+  }
+  #confirm-overlay.active{display:flex;}
+  #confirm-box{
+    background:#1976D2; border:4px solid var(--border-dark); border-radius:16px;
+    padding:20px; max-width:340px; text-align:center;
+  }
+  #confirm-message{font-weight:800; margin-bottom:16px; font-size:1.02rem;}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1 id="main-title" class="pixel-text">🎯 EL GRAN ROSCO</h1>
+
+  <!-- PANTALLA BIENVENIDA -->
+  <div id="screen-welcome" class="screen active">
+    <div class="card">
+      <p style="font-weight:800;">Elegí tu apodo, tu avatar, el nivel y el modo de juego. ¡No pedimos datos personales, solo un alias divertido!</p>
+
+      <label class="field-label">👤 Jugador 1 – Elegí tu apodo</label>
+      <input type="text" id="nick1" maxlength="12" placeholder="Ej: LinceVerde">
+      <div class="avatar-grid" id="avatars1"></div>
+
+      <label class="field-label">📚 Nivel de dificultad</label>
+      <div class="diff-grid">
+        <button class="toy-btn btn-green" data-diff="facil" onclick="selectDifficulty('facil')">🟢 FÁCIL<br><small>A–J · 10 letras</small></button>
+        <button class="toy-btn btn-orange" data-diff="medio" onclick="selectDifficulty('medio')" style="background:var(--btn-orange);">🟠 MEDIO<br><small>A–R · 18 letras</small></button>
+        <button class="toy-btn btn-red" data-diff="dificil" onclick="selectDifficulty('dificil')">🔴 DIFÍCIL<br><small>A–Z · 25 letras</small></button>
+      </div>
+
+      <label class="field-label">🎮 Modo de juego</label>
+      <div class="mode-grid">
+        <button class="toy-btn" data-mode="practica" onclick="selectMode('practica')">🕒 Práctica<br>Individual</button>
+        <button class="toy-btn btn-red" data-mode="bot" onclick="selectMode('bot')">🤖 Vs<br>Robotín</button>
+        <button class="toy-btn btn-blue" data-mode="dos" onclick="selectMode('dos')">👥 2<br>Jugadores</button>
+      </div>
+
+      <div id="player2-block" class="player-block hidden">
+        <label class="field-label">👤 Jugador 2 – Elegí su apodo</label>
+        <input type="text" id="nick2" maxlength="12" placeholder="Ej: CapitánCiencia">
+        <div class="avatar-grid" id="avatars2"></div>
+      </div>
+
+      <div id="welcome-actions">
+        <button class="toy-btn btn-green" onclick="startGame()">▶ COMENZAR</button>
+        <br>
+        <button class="toy-btn btn-small" onclick="showScreen('screen-trophies'); renderTrophies();">🏆 Mis Trofeos / Récords</button>
+      </div>
+      <p id="welcome-error" style="color:#FFEB3B; font-weight:900; display:none;"></p>
+    </div>
+  </div>
+
+  <!-- PANTALLA TROFEOS -->
+  <div id="screen-trophies" class="screen">
+    <div class="card">
+      <h2 class="pixel-text" style="font-size:14px;">🏆 MIS TROFEOS</h2>
+      <div id="trophies-list" style="margin-top:14px;"></div>
+      <p id="trophies-empty" class="hidden">Todavía no jugaste ninguna partida. ¡Jugá una para empezar tu historial!</p>
+      <div id="trophies-history-title" class="pixel-text hidden">📜 Últimas partidas</div>
+      <div id="trophies-history"></div>
+      <button class="toy-btn btn-small" onclick="showScreen('screen-welcome')">⬅ Volver</button>
+      <button class="toy-btn btn-small btn-red" onclick="resetHistory()">🗑 Borrar historial</button>
+    </div>
+  </div>
+
+  <!-- PANTALLA JUEGO -->
+  <div id="screen-game" class="screen">
+    <div class="card">
+      <div id="turn-banner" class="pixel-text hidden"></div>
+      <div style="margin-bottom:10px;">
+        <span class="badge" id="timer-badge">⏳ <span id="timer">60</span>s</span>
+        <span class="badge" id="difficulty-badge"></span>
+      </div>
+
+      <div id="roscos-container" class="roscos-container"></div>
+
+      <div class="definition-box" id="card-content"></div>
+      <div id="bot-thinking" class="hidden">🤖 Robotín está pensando...</div>
+
+      <input type="text" id="answer-input" placeholder="Escribí la respuesta..." autocomplete="off" onkeydown="if(event.key==='Enter'){responder();}">
+      <div>
+        <button class="toy-btn btn-green" id="btn-enviar" onclick="responder(event)">✅ ENVIAR</button>
+        <button class="toy-btn btn-red" id="btn-pasar" onclick="pasar(event)">⏭ PASO</button>
+      </div>
+      <button class="toy-btn btn-small" style="margin-top:10px;" onclick="confirmExit()">🚪 Salir</button>
+    </div>
+  </div>
+
+  <!-- PANTALLA RESULTADOS -->
+  <div id="screen-results" class="screen">
+    <div class="card">
+      <h2 class="pixel-text" style="font-size:16px;">¡ROSCO TERMINADO!</h2>
+      <div id="results-summary"></div>
+      <div id="results-detail"></div>
+      <button class="toy-btn btn-green" onclick="showScreen('screen-welcome')">🏠 Menú Principal</button>
+      <button class="toy-btn btn-small" onclick="showScreen('screen-trophies'); renderTrophies();">🏆 Ver Trofeos</button>
+    </div>
+  </div>
+
+  <footer>Hecho para jugar en la escuela · Sin registro · Sin datos personales</footer>
+</div>
+
+<!-- MODAL DE CONFIRMACIÓN PROPIO -->
+<div id="confirm-overlay">
+  <div id="confirm-box">
+    <p id="confirm-message" class="pixel-text" style="font-size:12px;"></p>
+    <button class="toy-btn btn-green" id="confirm-yes-btn">Sí</button>
+    <button class="toy-btn btn-red" id="confirm-no-btn">No</button>
+  </div>
+</div>
+
+<!--
+  ============================================================
+  FIREBASE
+  Este archivo no usa un bundler (Vite/webpack), así que en vez
+  de "import ... from 'firebase/app'" se importa directamente
+  desde el CDN oficial de Firebase con la URL completa.
+  Nota: dentro del visor de Claude (artifact publicado) esto no
+  va a poder conectarse por la política de seguridad de la
+  página; funciona normalmente si alojás el .html vos mismo
+  (Firebase Hosting, GitHub Pages, Netlify, etc.).
+  ============================================================
+-->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+
+  // Configuración de tu app web de Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyDtm0tEFy-cui8_dWxHgQEQCUPNLOZEP0E",
+    authDomain: "el-rosco-web.firebaseapp.com",
+    databaseURL: "https://el-rosco-web-default-rtdb.firebaseio.com",
+    projectId: "el-rosco-web",
+    storageBucket: "el-rosco-web.firebasestorage.app",
+    messagingSenderId: "1077333375387",
+    appId: "1:1077333375387:web:3e2e60f9dd95507a65093e",
+    measurementId: "G-TLFFR9GGTV"
+  };
+
+  // Inicializar Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+
+<script>
+/* ==========================================================
+   BANCOS DE PALABRAS POR NIVEL DE DIFICULTAD
+   Cada nivel tiene su propio tamaño de rosco y sus propios
+   Set A / Set B (nunca comparten palabra en la misma letra).
+   ========================================================== */
+
+// ---------- FÁCIL: A a J (10 letras) — vocabulario cotidiano ----------
+const FACIL_SET_A = [
+  {l:'A', type:'empieza', clue:'Líquido transparente que tomamos para no tener sed.', answers:['agua']},
+  {l:'B', type:'empieza', clue:'Fruta amarilla y alargada que le encanta a los monos.', answers:['banana']},
+  {l:'C', type:'empieza', clue:'Utensilio que usamos para comer la sopa.', answers:['cuchara']},
+  {l:'D', type:'empieza', clue:'Parte de la mano que usamos para señalar y tocar cosas.', answers:['dedo']},
+  {l:'E', type:'empieza', clue:'Lugar donde vamos a aprender y jugar con nuestros compañeros.', answers:['escuela']},
+  {l:'F', type:'empieza', clue:'Grupo de personas que nos quiere y con quien vivimos.', answers:['familia']},
+  {l:'G', type:'empieza', clue:'Animal doméstico que maúlla y le gusta dormir todo el día.', answers:['gato']},
+  {l:'H', type:'empieza', clue:'Alimento redondo que ponen las gallinas; se come frito o hervido.', answers:['huevo']},
+  {l:'I', type:'empieza', clue:'Estación del año más fría, cuando a veces nieva.', answers:['invierno']},
+  {l:'J', type:'empieza', clue:'Lo usamos con agua para lavarnos las manos y bañarnos.', answers:['jabón','jabon']},
+];
+const FACIL_SET_B = [
+  {l:'A', type:'empieza', clue:'Planta grande con tronco de madera, ramas y hojas verdes.', answers:['árbol','arbol']},
+  {l:'B', type:'empieza', clue:'Vehículo de dos ruedas que se maneja pedaleando.', answers:['bicicleta']},
+  {l:'C', type:'empieza', clue:'Objeto de hojas donde escribimos y dibujamos en la escuela.', answers:['cuaderno']},
+  {l:'D', type:'empieza', clue:'Animal marino muy inteligente que salta fuera del agua.', answers:['delfín','delfin']},
+  {l:'E', type:'empieza', clue:'Animal terrestre enorme, con trompa larga y orejas grandes.', answers:['elefante']},
+  {l:'F', type:'empieza', clue:'Parte de la planta con colores y buen olor que atrae a las abejas.', answers:['flor']},
+  {l:'G', type:'empieza', clue:'Objeto inflable con aire o helio que se usa en los cumpleaños.', answers:['globo']},
+  {l:'H', type:'empieza', clue:'Insecto pequeño y trabajador que vive en colonias bajo la tierra.', answers:['hormiga']},
+  {l:'I', type:'empieza', clue:'Porción de tierra rodeada de agua por todos lados.', answers:['isla']},
+  {l:'J', type:'empieza', clue:'Objeto con el que los chicos se divierten y juegan.', answers:['juguete']},
+];
+
+// ---------- MEDIO: A a R (18 letras) — ciencias, lengua y geografía ----------
+const MEDIO_SET_A = [
+  {l:'A', type:'empieza', clue:'Animal que vive parte de su vida en el agua y parte en la tierra, como la rana.', answers:['anfibio']},
+  {l:'B', type:'empieza', clue:'Instrumento que siempre señala el norte y sirve para orientarse.', answers:['brújula','brujula']},
+  {l:'C', type:'empieza', clue:'Órgano del cuerpo humano que bombea sangre sin parar.', answers:['corazón','corazon']},
+  {l:'D', type:'empieza', clue:'Región muy seca, con pocas lluvias y poca vegetación.', answers:['desierto']},
+  {l:'E', type:'empieza', clue:'Conjunto de huesos que sostiene y protege nuestro cuerpo.', answers:['esqueleto']},
+  {l:'F', type:'empieza', clue:'Relato breve, generalmente con animales, que deja una enseñanza.', answers:['fábula','fabula']},
+  {l:'G', type:'empieza', clue:'Gran masa de hielo que se forma en zonas muy frías, como la Antártida.', answers:['glaciar']},
+  {l:'H', type:'empieza', clue:'Animal que se alimenta solamente de plantas.', answers:['herbívoro','herbivoro']},
+  {l:'I', type:'empieza', clue:'Gran bloque de hielo que flota en el mar, con la mayor parte bajo el agua.', answers:['iceberg']},
+  {l:'J', type:'empieza', clue:'Sistema de escritura con dibujos que usaban los antiguos egipcios.', answers:['jeroglífico','jeroglifico']},
+  {l:'K', type:'empieza', clue:'Unidad que se usa para medir distancias largas; equivale a mil metros.', answers:['kilómetro','kilometro']},
+  {l:'L', type:'empieza', clue:'Línea imaginaria que indica qué tan lejos del ecuador está un lugar.', answers:['latitud']},
+  {l:'M', type:'empieza', clue:'Terreno alto y plano, elevado sobre el nivel del mar.', answers:['meseta']},
+  {l:'N', type:'empieza', clue:'Parte central de la célula que controla sus actividades.', answers:['núcleo','nucleo']},
+  {l:'O', type:'empieza', clue:'Animal que se alimenta tanto de plantas como de otros animales.', answers:['omnívoro','omnivoro']},
+  {l:'P', type:'empieza', clue:'Porción de tierra rodeada de agua por todos lados menos por uno.', answers:['península','peninsula']},
+  {l:'Q', type:'empieza', clue:'Idioma originario de los pueblos andinos de Sudamérica.', answers:['quechua']},
+  {l:'R', type:'empieza', clue:'Animal de sangre fría cubierto de escamas, como la serpiente o la tortuga.', answers:['reptil']},
+];
+const MEDIO_SET_B = [
+  {l:'A', type:'empieza', clue:'Palabra que acompaña al sustantivo y describe sus características.', answers:['adjetivo']},
+  {l:'B', type:'empieza', clue:'Ser vivo diminuto, formado por una sola célula, que no se ve a simple vista.', answers:['bacteria']},
+  {l:'C', type:'empieza', clue:'Unidad diminuta y viva que forma a todos los seres vivos.', answers:['célula','celula']},
+  {l:'D', type:'empieza', clue:'Unión de dos vocales en una misma sílaba, como en la palabra "cielo".', answers:['diptongo']},
+  {l:'E', type:'empieza', clue:'Desgaste que sufre el suelo o las rocas por acción del agua, el viento o el hielo.', answers:['erosión','erosion']},
+  {l:'F', type:'empieza', clue:'Conjunto de animales que habitan en una región o ecosistema.', answers:['fauna']},
+  {l:'G', type:'empieza', clue:'Fuerza que atrae los objetos hacia el centro de la Tierra.', answers:['gravedad']},
+  {l:'H', type:'empieza', clue:'Cada una de las dos mitades en que se divide la Tierra, separadas por el ecuador.', answers:['hemisferio']},
+  {l:'I', type:'empieza', clue:'Animal que se alimenta principalmente de insectos.', answers:['insectívoro','insectivoro']},
+  {l:'J', type:'empieza', clue:'Bosque tropical muy denso, con gran variedad de plantas y animales.', answers:['jungla']},
+  {l:'K', type:'empieza', clue:'Unidad que se usa para medir el peso o la masa de las cosas.', answers:['kilogramo']},
+  {l:'L', type:'empieza', clue:'Línea imaginaria que mide qué tan lejos está un lugar del meridiano de Greenwich.', answers:['longitud']},
+  {l:'M', type:'empieza', clue:'Fragmento de roca que viene del espacio y cae sobre la Tierra.', answers:['meteorito']},
+  {l:'N', type:'empieza', clue:'Sustancias de los alimentos que el cuerpo necesita para crecer y funcionar bien.', answers:['nutrientes']},
+  {l:'O', type:'empieza', clue:'Gas del aire que los seres vivos necesitamos para respirar.', answers:['oxígeno','oxigeno']},
+  {l:'P', type:'empieza', clue:'Palabra que reemplaza al sustantivo en una oración, como "él" o "ella".', answers:['pronombre']},
+  {l:'Q', type:'empieza', clue:'Ciencia que estudia de qué están hechas las cosas y cómo se transforman.', answers:['química','quimica']},
+  {l:'R', type:'empieza', clue:'Animal mamífero de dientes afilados que le sirven para roer, como el ratón.', answers:['roedor']},
+];
+
+// ---------- DIFÍCIL: A a Z omitiendo Ñ y W (25 letras) — vocabulario técnico ----------
+const DIFICIL_SET_A = [
+  {l:'A', type:'empieza', clue:'Capa de gases que rodea la Tierra y nos permite respirar.', answers:['atmósfera','atmosfera']},
+  {l:'B', type:'empieza', clue:'Variedad de especies de seres vivos que existen en un ecosistema.', answers:['biodiversidad']},
+  {l:'C', type:'empieza', clue:'Sustancia verde de las plantas que capta la luz del sol para la fotosíntesis.', answers:['clorofila']},
+  {l:'D', type:'empieza', clue:'Relación entre la masa de un cuerpo y el espacio que ocupa.', answers:['densidad']},
+  {l:'E', type:'empieza', clue:'Conjunto formado por los seres vivos de un lugar y el ambiente en el que viven.', answers:['ecosistema']},
+  {l:'F', type:'empieza', clue:'Proceso por el cual las hojas de las plantas producen su propio alimento con ayuda de la luz solar.', answers:['fotosíntesis','fotosintesis']},
+  {l:'G', type:'empieza', clue:'Órgano que fabrica y libera sustancias que el cuerpo necesita, como el sudor o la saliva.', answers:['glándula','glandula']},
+  {l:'H', type:'empieza', clue:'Estado de sueño profundo en el que algunos animales pasan el invierno para ahorrar energía.', answers:['hibernación','hibernacion']},
+  {l:'I', type:'empieza', clue:'Animal que no tiene columna vertebral, como el insecto o el caracol.', answers:['invertebrado']},
+  {l:'J', type:'empieza', clue:'Período geológico en el que vivieron muchos dinosaurios.', answers:['jurásico','jurasico']},
+  {l:'K', type:'empieza', clue:'Unidad de temperatura usada en ciencia; el cero equivale al frío más extremo posible.', answers:['kelvin']},
+  {l:'L', type:'empieza', clue:'Capa sólida y rocosa que forma la superficie de la Tierra.', answers:['litósfera','litosfera']},
+  {l:'M', type:'empieza', clue:'Proceso de transformación que atraviesan algunos animales, como la oruga al convertirse en mariposa.', answers:['metamorfosis']},
+  {l:'N', type:'empieza', clue:'Enorme nube de gas y polvo en el espacio donde pueden nacer nuevas estrellas.', answers:['nebulosa']},
+  {l:'O', type:'empieza', clue:'Trayectoria curva que sigue un planeta o satélite alrededor de otro cuerpo.', answers:['órbita','orbita']},
+  {l:'P', type:'empieza', clue:'Proceso en el que el polen pasa de una flor a otra, permitiendo que las plantas se reproduzcan.', answers:['polinización','polinizacion']},
+  {l:'Q', type:'empieza', clue:'Semilla nutritiva originaria de los Andes, considerada un alimento muy completo.', answers:['quinoa']},
+  {l:'R', type:'empieza', clue:'Proceso biológico por el cual los seres vivos generan nuevos individuos de su misma especie.', answers:['reproducción','reproduccion']},
+  {l:'S', type:'empieza', clue:'Figura retórica que compara dos elementos utilizando la palabra "como".', answers:['símil','simil']},
+  {l:'T', type:'empieza', clue:'Rama de la geología que estudia los movimientos de las grandes placas de la corteza terrestre.', answers:['tectónica','tectonica']},
+  {l:'U', type:'empieza', clue:'Sonido con una frecuencia tan alta que el oído humano no puede escucharlo.', answers:['ultrasonido']},
+  {l:'V', type:'empieza', clue:'Animal que posee columna vertebral, como los peces, las aves y los mamíferos.', answers:['vertebrado']},
+  {l:'X', type:'empieza', clue:'Instrumento musical de percusión formado por láminas de madera que se golpean con mazos.', answers:['xilófono','xilofono']},
+  {l:'Y', type:'empieza', clue:'Lugar donde se encuentran de forma natural minerales, fósiles o restos arqueológicos.', answers:['yacimiento']},
+  {l:'Z', type:'empieza', clue:'Célula que se forma cuando se une un óvulo con un espermatozoide, inicio de un nuevo ser vivo.', answers:['zigoto']},
+];
+const DIFICIL_SET_B = [
+  {l:'A', type:'empieza', clue:'Formación rocosa o de coral bajo el mar, hogar de muchísimas especies marinas.', answers:['arrecife']},
+  {l:'B', type:'empieza', clue:'Cantidad total de materia viva que hay en un ecosistema.', answers:['biomasa']},
+  {l:'C', type:'empieza', clue:'Estructura del núcleo de la célula que contiene la información genética.', answers:['cromosoma']},
+  {l:'D', type:'empieza', clue:'Proceso de destrucción o eliminación de los bosques por acción humana.', answers:['deforestación','deforestacion']},
+  {l:'E', type:'empieza', clue:'Salida violenta de lava, gases y cenizas desde el interior de un volcán.', answers:['erupción','erupcion']},
+  {l:'F', type:'empieza', clue:'Resto de un animal o planta prehistórica que quedó petrificado en una roca.', answers:['fósil','fosil']},
+  {l:'G', type:'empieza', clue:'Proceso por el cual una semilla comienza a desarrollarse y se convierte en una nueva planta.', answers:['germinación','germinacion']},
+  {l:'H', type:'empieza', clue:'Figura retórica que consiste en exagerar mucho una idea para darle más fuerza.', answers:['hipérbole','hiperbole']},
+  {l:'I', type:'empieza', clue:'Propiedad de los cuerpos de mantener su estado de reposo o movimiento si no actúa una fuerza sobre ellos.', answers:['inercia']},
+  {l:'J', type:'empieza', clue:'Piedra semipreciosa de color verde, muy valorada desde la antigüedad.', answers:['jade']},
+  {l:'K', type:'empieza', clue:'Pequeño crustáceo marino que es el alimento principal de las ballenas.', answers:['krill']},
+  {l:'L', type:'empieza', clue:'Fase juvenil de un insecto antes de transformarse en adulto, como la oruga.', answers:['larva']},
+  {l:'M', type:'empieza', clue:'Figura retórica que nombra una cosa con el nombre de otra por la semejanza entre ellas.', answers:['metáfora','metafora']},
+  {l:'N', type:'empieza', clue:'Célula del sistema nervioso encargada de transmitir los impulsos nerviosos.', answers:['neurona']},
+  {l:'O', type:'empieza', clue:'Animal que nace de un huevo puesto por su madre, como las aves.', answers:['ovíparo','oviparo']},
+  {l:'P', type:'empieza', clue:'Ser vivo que se alimenta de otro organismo, llamado huésped, y le causa daño.', answers:['parásito','parasito']},
+  {l:'Q', type:'empieza', clue:'Unidad que se usa para medir la pureza del oro o el peso de las piedras preciosas.', answers:['quilate']},
+  {l:'R', type:'empieza', clue:'Energía que se transmite en forma de ondas, como la luz o el calor del sol.', answers:['radiación','radiacion']},
+  {l:'S', type:'empieza', clue:'Material sólido, como arena o barro, que se deposita en el fondo del agua.', answers:['sedimento']},
+  {l:'T', type:'empieza', clue:'Bioma de bosques fríos con árboles como pinos y abetos, típico del norte de Europa y Asia.', answers:['taiga']},
+  {l:'U', type:'empieza', clue:'Ser vivo formado por una sola célula, como las bacterias.', answers:['unicelular']},
+  {l:'V', type:'empieza', clue:'Montaña con una abertura por donde sale lava, gases y cenizas desde el interior de la Tierra.', answers:['volcán','volcan']},
+  {l:'X', type:'empieza', clue:'Tejido de las plantas que transporta el agua y los minerales desde la raíz hasta las hojas.', answers:['xilema']},
+  {l:'Y', type:'empieza', clue:'Elemento químico necesario para el buen funcionamiento de la tiroides.', answers:['yodo']},
+  {l:'Z', type:'empieza', clue:'Ciencia que estudia a los animales, su comportamiento y sus características.', answers:['zoología','zoologia']},
+];
+
+const LEVELS = {
+  facil:   {label:'Fácil',   setA: FACIL_SET_A,   setB: FACIL_SET_B},
+  medio:   {label:'Medio',   setA: MEDIO_SET_A,   setB: MEDIO_SET_B},
+  dificil: {label:'Difícil', setA: DIFICIL_SET_A, setB: DIFICIL_SET_B},
+};
+
+const AVATARS = ['🦁','🐧','🐯','🐼','🦊','🐨','🐸','🐙','⭐','🔷','🔺','🤖'];
+const TRANSITION_MS = 1400; // pausa visual del cartel de turno antes de arrancar el reloj
+
+/* ================== ESTADO ================== */
+// game = {
+//   mode, difficultyKey, difficultyLabel, letterCount,
+//   players:[{alias,avatar,isBot,score,errs,set,status[]}],
+//   currentIdx, currentLetterIdx,
+//   round: [letterIdx,...], turnQueue: [{playerIdx,letterIdx}, ...], turnPointer,
+//   timerInterval, timeLeft, botTimeout, transitionTimeout
+// }
+let game = null;
+let selectedMode = null;
+let selectedDifficulty = null;
+let selectedAvatar1 = AVATARS[0];
+let selectedAvatar2 = AVATARS[1];
+
+/* ================== UTILIDADES ================== */
+function normalize(s){
+  return (s||'').trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]/g,'');
+}
+function sanitizeNick(v){
+  return v.replace(/[^a-zA-Z0-9]/g,'').slice(0,12);
+}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function spawnStar(e){
+  if(!e || !e.currentTarget) return;
+  const btn = e.currentTarget;
+  const star = document.createElement('span');
+  star.innerText = '⭐';
+  star.className = 'star-fx';
+  btn.appendChild(star);
+  setTimeout(()=>star.remove(), 500);
+}
+
+/* ================== MODAL DE CONFIRMACIÓN ================== */
+function showConfirm(message, onYes, onNo){
+  const overlay = document.getElementById('confirm-overlay');
+  document.getElementById('confirm-message').innerText = message;
+  overlay.classList.add('active');
+
+  const yesBtn = document.getElementById('confirm-yes-btn');
+  const noBtn = document.getElementById('confirm-no-btn');
+
+  const newYes = yesBtn.cloneNode(true);
+  const newNo = noBtn.cloneNode(true);
+  yesBtn.parentNode.replaceChild(newYes, yesBtn);
+  noBtn.parentNode.replaceChild(newNo, noBtn);
+
+  newYes.addEventListener('click', ()=>{
+    overlay.classList.remove('active');
+    if(onYes) onYes();
+  });
+  newNo.addEventListener('click', ()=>{
+    overlay.classList.remove('active');
+    if(onNo) onNo();
+  });
+}
+
+/* ================== PANTALLA BIENVENIDA ================== */
+function renderAvatarPicker(containerId, initial, onPick){
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  AVATARS.forEach(av=>{
+    const b = document.createElement('div');
+    b.className = 'avatar-option' + (av===initial?' selected':'');
+    b.innerText = av;
+    b.onclick = ()=>{
+      c.querySelectorAll('.avatar-option').forEach(x=>x.classList.remove('selected'));
+      b.classList.add('selected');
+      onPick(av);
+    };
+    c.appendChild(b);
+  });
+}
+renderAvatarPicker('avatars1', selectedAvatar1, av=>selectedAvatar1=av);
+renderAvatarPicker('avatars2', selectedAvatar2, av=>selectedAvatar2=av);
+
+document.getElementById('nick1').addEventListener('input', e=>{
+  e.target.value = sanitizeNick(e.target.value);
+});
+document.getElementById('nick2').addEventListener('input', e=>{
+  e.target.value = sanitizeNick(e.target.value);
+});
+
+function selectMode(m){
+  selectedMode = m;
+  document.querySelectorAll('.mode-grid .toy-btn').forEach(b=>b.style.outline='none');
+  document.querySelector(`.mode-grid .toy-btn[data-mode="${m}"]`).style.outline = '4px solid #fff';
+  document.getElementById('player2-block').classList.toggle('hidden', m!=='dos');
+}
+
+function selectDifficulty(d){
+  selectedDifficulty = d;
+  document.querySelectorAll('.diff-grid .toy-btn').forEach(b=>b.style.outline='none');
+  document.querySelector(`.diff-grid .toy-btn[data-diff="${d}"]`).style.outline = '4px solid #fff';
+}
+
+function showWelcomeError(msg){
+  const p = document.getElementById('welcome-error');
+  p.innerText = msg;
+  p.style.display = 'block';
+}
+
+function startGame(){
+  const nick1 = sanitizeNick(document.getElementById('nick1').value) || 'Jugador1';
+  if(!selectedDifficulty){ showWelcomeError('⚠ Elegí un nivel de dificultad.'); return; }
+  if(!selectedMode){ showWelcomeError('⚠ Elegí un modo de juego.'); return; }
+  document.getElementById('welcome-error').style.display='none';
+
+  const level = LEVELS[selectedDifficulty];
+  const letterCount = level.setA.length;
+
+  // Jugador 1 siempre recibe el Set A. El Jugador 2 / Bot recibe el Set B,
+  // así nunca compiten por la misma palabra en la misma letra.
+  let players = [{
+    alias:nick1, avatar:selectedAvatar1, isBot:false, score:0, errs:0,
+    set: level.setA, status: Array(letterCount).fill('pending')
+  }];
+
+  if(selectedMode==='bot'){
+    players.push({
+      alias:'Robotín', avatar:'🤖', isBot:true, score:0, errs:0,
+      set: level.setB, status: Array(letterCount).fill('pending')
+    });
+  } else if(selectedMode==='dos'){
+    const nick2 = sanitizeNick(document.getElementById('nick2').value) || 'Jugador2';
+    players.push({
+      alias:nick2, avatar:selectedAvatar2, isBot:false, score:0, errs:0,
+      set: level.setB, status: Array(letterCount).fill('pending')
+    });
+  }
+
+  game = {
+    mode: selectedMode,
+    difficultyKey: selectedDifficulty,
+    difficultyLabel: level.label,
+    letterCount: letterCount,
+    players,
+    currentIdx: 0,
+    currentLetterIdx: 0,
+    round: [],
+    turnQueue: [],
+    turnPointer: 0,
+    timerInterval: null,
+    timeLeft: 60,
+    botTimeout: null,
+    transitionTimeout: null
+  };
+
+  document.getElementById('difficulty-badge').innerText = '📚 ' + level.label;
+
+  buildRoscoPanels();
+  showScreen('screen-game');
+  startRound([...Array(letterCount).keys()]); // primera vuelta: A, B, C ... en orden
+}
+
+/* ================== ROSCOS VISUALES (uno por jugador) ================== */
+function buildRoscoPanels(){
+  const container = document.getElementById('roscos-container');
+  container.innerHTML = '';
+
+  game.players.forEach((p, idx)=>{
+    const panel = document.createElement('div');
+    panel.className = 'rosco-panel';
+    panel.id = 'panel-'+idx;
+    panel.innerHTML = `
+      <h3>${p.avatar} Rosco de ${p.alias} <span id="turn-tag-${idx}" class="turn-tag hidden">▶ TURNO</span></h3>
+      <div class="rosco-mini-wrap" id="wrap-${idx}">
+        <div class="rosco-ring-inner" id="ring-${idx}"></div>
+        <div class="rosco-center-letter pixel-text" id="center-${idx}">A</div>
+      </div>
+      <div class="badge" style="background:var(--btn-green); margin-top:6px;">⭐ ${p.score}</div>
+    `;
+    container.appendChild(panel);
+  });
+
+  game.players.forEach((p, idx)=> buildRing(idx));
+}
+
+function buildRing(idx){
+  const ring = document.getElementById('ring-'+idx);
+  const wrap = document.getElementById('wrap-'+idx);
+  if(!ring || !wrap) return;
+  ring.innerHTML = '';
+  const total = game.players[idx].set.length;
+  const size = wrap.clientWidth || 200;
+  const radius = size*0.42;
+  const center = size/2;
+  for(let i=0;i<total;i++){
+    const angle = (2*Math.PI*i/total) - Math.PI/2;
+    const x = center + radius*Math.cos(angle);
+    const y = center + radius*Math.sin(angle);
+    const b = document.createElement('div');
+    b.className = 'letter-badge pending';
+    b.id = `badge-${idx}-${i}`;
+    b.style.left = (x/size*100)+'%';
+    b.style.top = (y/size*100)+'%';
+    b.innerText = game.players[idx].set[i].l;
+    ring.appendChild(b);
+  }
+}
+window.addEventListener('resize', ()=>{
+  if(!game) return;
+  game.players.forEach((p, idx)=> buildRing(idx));
+  refreshRoscoStatuses();
+});
+
+function refreshRoscoStatuses(){
+  if(!game) return;
+  game.players.forEach((p, idx)=>{
+    for(let i=0;i<p.status.length;i++){
+      const b = document.getElementById(`badge-${idx}-${i}`);
+      if(!b) continue;
+      b.classList.remove('correct','error','active');
+      if(p.status[i]==='correct') b.classList.add('correct');
+      else if(p.status[i]==='error') b.classList.add('error');
+    }
+  });
+  // Resalta únicamente la letra que se está jugando ahora, en el rosco activo
+  const activeBadge = document.getElementById(`badge-${game.currentIdx}-${game.currentLetterIdx}`);
+  if(activeBadge) activeBadge.classList.add('active');
+}
+
+function updatePanelHighlight(){
+  game.players.forEach((p, idx)=>{
+    const panel = document.getElementById('panel-'+idx);
+    const tag = document.getElementById('turn-tag-'+idx);
+    if(!panel) return;
+    const isActive = (idx===game.currentIdx) && game.players.length>1;
+    panel.classList.toggle('active-panel', isActive);
+    if(tag) tag.classList.toggle('hidden', !isActive);
+  });
+}
+
+function updateScoreBadges(){
+  game.players.forEach((p, idx)=>{
+    const panel = document.getElementById('panel-'+idx);
+    if(!panel) return;
+    const scoreBadge = panel.querySelector('.badge');
+    if(scoreBadge) scoreBadge.innerText = `⭐ ${p.score}`;
+  });
+}
+
+/* ================== FLUJO DE TURNOS: LETRA POR LETRA, SIN RACHA ================== */
+function currentPlayer(){ return game.players[game.currentIdx]; }
+
+// Arma una nueva vuelta a partir de una lista de índices de letra (en orden).
+// Genera el listado de sub-turnos: para cada letra, primero el Jugador 1
+// (si todavía tiene esa letra pendiente) y luego el Jugador 2 / Bot (ídem).
+function startRound(letterIndices){
+  game.round = letterIndices;
+  const tq = [];
+  letterIndices.forEach(letterIdx=>{
+    game.players.forEach((p, idx)=>{
+      if(p.status[letterIdx] === 'pending'){
+        tq.push({playerIdx: idx, letterIdx});
+      }
+    });
+  });
+  game.turnQueue = tq;
+  game.turnPointer = 0;
+
+  if(tq.length === 0){ endGame(); return; }
+  playNextSubTurn();
+}
+
+function pendingLettersRemain(){
+  for(let i=0;i<game.letterCount;i++){
+    for(const p of game.players){
+      if(p.status[i] === 'pending') return true;
+    }
+  }
+  return false;
+}
+
+function playNextSubTurn(){
+  if(game.turnPointer >= game.turnQueue.length){
+    // La vuelta terminó: si quedan letras pendientes (pasadas), armamos la
+    // "segunda vuelta" solo con esas letras; si no, se acabó el juego.
+    if(!pendingLettersRemain()){ endGame(); return; }
+    const nextRound = [];
+    for(let i=0;i<game.letterCount;i++){
+      const anyonePending = game.players.some(p=>p.status[i]==='pending');
+      if(anyonePending) nextRound.push(i);
+    }
+    startRound(nextRound);
+    return;
+  }
+
+  const sub = game.turnQueue[game.turnPointer];
+  game.turnPointer++;
+  beginSubTurn(sub.playerIdx, sub.letterIdx);
+}
+
+function beginSubTurn(playerIdx, letterIdx){
+  clearTimeout(game.transitionTimeout);
+  game.currentIdx = playerIdx;
+  game.currentLetterIdx = letterIdx;
+  const p = currentPlayer();
+  const letterObj = p.set[letterIdx];
+
+  refreshRoscoStatuses();
+  updatePanelHighlight();
+  updateScoreBadges();
+
+  const centerEl = document.getElementById('center-'+playerIdx);
+  if(centerEl) centerEl.innerText = letterObj.l;
+
+  document.getElementById('card-content').innerHTML =
+    `<strong>${letterObj.type==='empieza'?'Empieza por':'Contiene la'} ${letterObj.l}:</strong> ${letterObj.clue}`;
+  document.getElementById('card-content').classList.add('waiting');
+  document.getElementById('answer-input').value = '';
+  setInputEnabled(false);
+  document.getElementById('bot-thinking').classList.add('hidden');
+  document.getElementById('timer').innerText = '—';
+
+  // Cartel de cambio de turno, bien visible, ANTES de que arranque el reloj
+  const banner = document.getElementById('turn-banner');
+  if(game.players.length>1){
+    banner.classList.remove('hidden');
+    banner.innerText = `¡Turno de ${p.avatar} ${p.alias}!`;
+    banner.classList.remove('turn-flash');
+    void banner.offsetWidth; // reinicia la animación
+    banner.classList.add('turn-flash');
+  } else {
+    banner.classList.add('hidden');
+  }
+
+  // Pequeña pausa visual antes de habilitar la jugada y arrancar el reloj
+  game.transitionTimeout = setTimeout(()=>{
+    document.getElementById('card-content').classList.remove('waiting');
+    document.getElementById('answer-input').focus();
+    if(p.isBot){
+      runBotTurn(letterIdx);
+    } else {
+      setInputEnabled(true);
+      startPlayerTimer();
+    }
+  }, TRANSITION_MS);
+}
+
+function setInputEnabled(enabled){
+  document.getElementById('answer-input').disabled = !enabled;
+  document.getElementById('btn-enviar').disabled = !enabled;
+  document.getElementById('btn-pasar').disabled = !enabled;
+}
+
+function startPlayerTimer(){
+  clearInterval(game.timerInterval);
+  game.timeLeft = 60;
+  document.getElementById('timer').innerText = game.timeLeft;
+  game.timerInterval = setInterval(()=>{
+    game.timeLeft--;
+    document.getElementById('timer').innerText = game.timeLeft;
+    if(game.timeLeft<=0){
+      clearInterval(game.timerInterval);
+      handleTimeout();
+    }
+  }, 1000);
+}
+
+// Tiempo agotado: la letra queda pendiente (se retoma en la próxima vuelta)
+// y el turno pasa de inmediato al siguiente participante.
+function handleTimeout(){
+  setInputEnabled(false);
+  playNextSubTurn();
+}
+
+function responder(e){
+  if(currentPlayer().isBot) return;
+  clearInterval(game.timerInterval);
+  if(e) spawnStar(e);
+  setInputEnabled(false);
+  const p = currentPlayer();
+  const letterIdx = game.currentLetterIdx;
+  const letterObj = p.set[letterIdx];
+  const val = document.getElementById('answer-input').value;
+  const ok = letterObj.answers.some(a=>normalize(a)===normalize(val));
+  p.status[letterIdx] = ok ? 'correct' : 'error';
+  if(ok) p.score++; else p.errs++;
+  refreshRoscoStatuses();
+  updateScoreBadges();
+  playNextSubTurn();
+}
+
+// "Paso": la letra queda pendiente (se retoma en la próxima vuelta) y el
+// turno termina de inmediato.
+function pasar(e){
+  if(currentPlayer().isBot) return;
+  clearInterval(game.timerInterval);
+  if(e) spawnStar(e);
+  setInputEnabled(false);
+  playNextSubTurn();
+}
+
+function runBotTurn(letterIdx){
+  setInputEnabled(false);
+  document.getElementById('bot-thinking').classList.remove('hidden');
+  document.getElementById('timer').innerText = '🤖';
+  const delay = 5000 + Math.random()*10000; // 5 a 15 segundos
+  game.botTimeout = setTimeout(()=>{
+    document.getElementById('bot-thinking').classList.add('hidden');
+    const p = currentPlayer();
+    const ok = Math.random() < 0.6; // 60% de acierto
+    p.status[letterIdx] = ok ? 'correct' : 'error';
+    if(ok) p.score++; else p.errs++;
+    refreshRoscoStatuses();
+    updateScoreBadges();
+    playNextSubTurn();
+  }, delay);
+}
+
+function confirmExit(){
+  clearInterval(game.timerInterval);
+  clearTimeout(game.botTimeout);
+  clearTimeout(game.transitionTimeout);
+  showConfirm(
+    '¿Seguro que querés salir? Se perderá el progreso de esta partida.',
+    ()=>{ showScreen('screen-welcome'); },
+    ()=>{ beginSubTurn(game.currentIdx, game.currentLetterIdx); }
+  );
+}
+
+/* ================== FIN DE PARTIDA Y RESULTADOS ================== */
+function endGame(){
+  clearInterval(game.timerInterval);
+  clearTimeout(game.botTimeout);
+  clearTimeout(game.transitionTimeout);
+  refreshRoscoStatuses();
+  document.getElementById('turn-banner').classList.add('hidden');
+  const history = loadHistory();
+  const totalLetters = game.letterCount;
+  const diffLabel = game.difficultyLabel;
+  let summaryHTML = '';
+
+  if(game.mode==='practica'){
+    const p = game.players[0];
+    const best = getPracticeBest(p.alias, game.difficultyKey);
+    const isNewRecord = p.score > best;
+    if(isNewRecord) setPracticeBest(p.alias, game.difficultyKey, p.score);
+    summaryHTML = `${p.avatar} ${p.alias} (Nivel ${diffLabel}): ${p.score}/${totalLetters} aciertos.` +
+      (isNewRecord ? ' 🌟 ¡NUEVO RÉCORD PERSONAL!' : ` (Tu mejor marca sigue siendo ${Math.max(best,p.score)}).`);
+    history.push({alias:p.alias, avatar:p.avatar, mode:'practica', difficulty:game.difficultyKey, difficultyLabel:diffLabel, result:'completado', correct:p.score, errors:p.errs, total:totalLetters, date:Date.now()});
+  } else {
+    const [p1,p2] = game.players;
+    let result1, result2;
+    if(p1.score>p2.score){ result1='victoria'; result2='derrota'; }
+    else if(p1.score<p2.score){ result1='derrota'; result2='victoria'; }
+    else { result1='empate'; result2='empate'; }
+
+    summaryHTML = `Nivel ${diffLabel}<br>${p1.avatar} ${p1.alias}: ${p1.score}/${totalLetters} aciertos<br>${p2.avatar} ${p2.alias}: ${p2.score}/${totalLetters} aciertos<br><br>` +
+      (result1==='empate' ? '🤝 ¡EMPATE!' : `🏆 ¡Ganó ${result1==='victoria'?p1.alias:p2.alias}!`);
+
+    history.push({alias:p1.alias, avatar:p1.avatar, mode:game.mode, difficulty:game.difficultyKey, difficultyLabel:diffLabel, result:result1, correct:p1.score, errors:p1.errs, total:totalLetters, date:Date.now()});
+    if(!p2.isBot){
+      history.push({alias:p2.alias, avatar:p2.avatar, mode:game.mode, difficulty:game.difficultyKey, difficultyLabel:diffLabel, result:result2, correct:p2.score, errors:p2.errs, total:totalLetters, date:Date.now()});
+    }
+  }
+  saveHistory(history);
+
+  document.getElementById('results-summary').innerHTML = summaryHTML;
+  document.getElementById('results-detail').innerHTML = '';
+  showScreen('screen-results');
+}
+
+/* ================== HISTORIAL / LOCALSTORAGE ================== */
+const HIST_KEY = 'granRoscoHistorial';
+const BEST_KEY = 'granRoscoRecordPractica';
+
+function loadHistory(){
+  try{ return JSON.parse(localStorage.getItem(HIST_KEY)) || []; }catch(e){ return []; }
+}
+function saveHistory(h){
+  try{ localStorage.setItem(HIST_KEY, JSON.stringify(h.slice(-300))); }catch(e){}
+}
+// Los récords de práctica se guardan por apodo + nivel de dificultad.
+function getPracticeBest(alias, difficultyKey){
+  try{
+    const b = JSON.parse(localStorage.getItem(BEST_KEY)) || {};
+    return (b[alias] && b[alias][difficultyKey]) || 0;
+  }catch(e){ return 0; }
+}
+function setPracticeBest(alias, difficultyKey, val){
+  try{
+    const b = JSON.parse(localStorage.getItem(BEST_KEY)) || {};
+    if(!b[alias]) b[alias] = {};
+    b[alias][difficultyKey] = val;
+    localStorage.setItem(BEST_KEY, JSON.stringify(b));
+  }catch(e){}
+}
+function resetHistory(){
+  showConfirm(
+    '¿Borrar todo el historial y los récords guardados en este dispositivo?',
+    ()=>{
+      localStorage.removeItem(HIST_KEY);
+      localStorage.removeItem(BEST_KEY);
+      renderTrophies();
+    },
+    null
+  );
+}
+
+function renderTrophies(){
+  const history = loadHistory();
+  const list = document.getElementById('trophies-list');
+  const empty = document.getElementById('trophies-empty');
+  const histTitle = document.getElementById('trophies-history-title');
+  const histBox = document.getElementById('trophies-history');
+  list.innerHTML = '';
+  histBox.innerHTML = '';
+
+  if(history.length===0){
+    empty.classList.remove('hidden');
+    histTitle.classList.add('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  const byAlias = {};
+  history.forEach(h=>{
+    if(!byAlias[h.alias]) byAlias[h.alias] = {avatar:h.avatar, jugadas:0, ganadas:0, perdidas:0, aciertosSum:0, totalSum:0};
+    const a = byAlias[h.alias];
+    a.avatar = h.avatar || a.avatar;
+    a.jugadas++;
+    if(h.result==='victoria') a.ganadas++;
+    if(h.result==='derrota') a.perdidas++;
+    a.aciertosSum += h.correct;
+    a.totalSum += h.total;
+  });
+
+  Object.keys(byAlias).forEach(alias=>{
+    const a = byAlias[alias];
+    const pct = a.totalSum>0 ? Math.round(100*a.aciertosSum/a.totalSum) : 0;
+    const row = document.createElement('div');
+    row.className = 'trophy-row';
+    row.innerHTML = `
+      <div class="tr-name">${a.avatar||'⭐'} ${alias}
+        <small>Partidas: ${a.jugadas} · Ganadas: ${a.ganadas} · Perdidas: ${a.perdidas}</small>
+        <small>Precisión promedio (todos los niveles): ${pct}%</small>
+      </div>`;
+    list.appendChild(row);
+  });
+
+  // Últimas partidas, con formato "Apodo - Nivel X: aciertos/total"
+  histTitle.classList.remove('hidden');
+  history.slice(-12).reverse().forEach(h=>{
+    const div = document.createElement('div');
+    div.className = 'history-entry';
+    const resultLabel = h.result==='victoria' ? '🏆 Ganó' : h.result==='derrota' ? '❌ Perdió' : h.result==='empate' ? '🤝 Empate' : '✅ Completó';
+    div.innerText = `${h.avatar||''} ${h.alias} - Nivel ${h.difficultyLabel||'?'}: ${h.correct}/${h.total} aciertos (${resultLabel})`;
+    histBox.appendChild(div);
+  });
+}
+</script>
+</body>
+</html>
